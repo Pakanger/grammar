@@ -275,8 +275,8 @@ const CONFIG = {
   TEACHER_PIN: "2580"
 };
 /* ======================================================= */
-const SITE = "Grammar Training", BUILD = "2026-10-05c";
-const UNITS = [{"id":"pr","name":"Simple present","on":false},{"id":"pa","name":"Simple past","on":false},{"id":"pp","name":"Present perfect","on":true},{"id":"fu","name":"Future forms","on":false},{"id":"qn","name":"Questions and word order","on":false},{"id":"if","name":"If-clauses","on":false},{"id":"aa","name":"Adjective or adverb","on":false},{"id":"ar","name":"Articles and quantifiers","on":false},{"id":"pv","name":"Passive","on":false},{"id":"de","name":"German mistakes","on":false},{"id":"rc","name":"Relative clauses","on":false},{"id":"ca","name":"Capitals and apostrophes","on":false},{"id":"rs","name":"Reported speech","on":false},{"id":"rg","name":"Formal or informal","on":false}];   // alle Bausteine in der Reihenfolge des Pfads: {id, name, on}
+const SITE = "Grammar Training", BUILD = "2026-10-06b";
+const UNITS = [{"id":"pr","name":"Simple present","on":true},{"id":"pa","name":"Simple past","on":false},{"id":"pp","name":"Present perfect","on":true},{"id":"fu","name":"Future forms","on":false},{"id":"qn","name":"Questions and word order","on":false},{"id":"if","name":"If-clauses","on":false},{"id":"aa","name":"Adjective or adverb","on":false},{"id":"ar","name":"Articles and quantifiers","on":false},{"id":"pv","name":"Passive","on":false},{"id":"de","name":"German mistakes","on":false},{"id":"rc","name":"Relative clauses","on":false},{"id":"ca","name":"Capitals and apostrophes","on":false},{"id":"rs","name":"Reported speech","on":false},{"id":"rg","name":"Formal or informal","on":false}];   // alle Bausteine in der Reihenfolge des Pfads: {id, name, on}
 
 /* ===== FIGUREN START (Quelle: figuren.js) ===== */
 /* Doggo und Dogga, Platzhalter (Version 1 "Sticker"). Stand 4. Oktober 2026.
@@ -316,8 +316,19 @@ function bowParts(g){
     fL('M70 38C84 46 100 46 112 42',d,4)+fL('M162 38C148 46 132 46 120 42',d,4)+fO(lL)+fO(lR)+
     `<rect x="104" y="33" width="24" height="24" rx="8" fill="${m}" stroke="${INK}" stroke-width="5"/>`+fL('M110 40C114 38 118 38 122 40',l,3.5)+'</g>';
 }
+/* Baustein pr: Laborbrille, auf die Stirn geschoben (Fakten stehen im simple present) */
+function gogglesParts(g){
+  const m=g?'#F2B705':'#FF8A1F',d=g?'#C98F00':'#3A4154',gl=g?'#FFF6D0':'#C9EEFF',hi=g?'#FFFFFF':'#FFFFFF';
+  const strap='M70 66C80 50 98 44 116 42C134 40 152 46 166 62';
+  const lens=(cx,cy)=>`<circle cx="${cx}" cy="${cy}" r="19" fill="${m}" stroke="${INK}" stroke-width="5"/><circle cx="${cx}" cy="${cy}" r="11.500" fill="${gl}" stroke="${INK}" stroke-width="3.500"/>`+
+    `<path d="M${cx-6} ${cy-1}C${cx-6} ${cy-5} ${cx-3} ${cy-7} ${cx+1} ${cy-7}" fill="none" stroke="${hi}" stroke-width="3"/>`;
+  return `<path d="${strap}" fill="none" stroke="${INK}" stroke-width="16"/><path d="${strap}" fill="none" stroke="${d}" stroke-width="7"/>`+
+    `<path d="M112 37L124 35" fill="none" stroke="${INK}" stroke-width="12"/><path d="M112 37L124 35" fill="none" stroke="${m}" stroke-width="4"/>`+
+    lens(97,39)+lens(139,34);
+}
 /* Ein Eintrag pro Baustein: Name, Name der Gold-Variante, Doggos Spruch beim Freischalten, Ebene */
 const COSTUMES={
+  pr:{name:'Lab goggles',gold:'Gold lab goggles',say:'Facts take the simple present, so here is one: these goggles really suit me.',parts:gogglesParts},
   pp:{name:'Present bow',gold:'Gold bow',say:'A present bow for the present perfect. I didn\u2019t choose the pun, but I do like the bow.',parts:bowParts},
   if:{name:'Wizard hat',gold:'Gold wizard hat',say:'If I were a wizard, I would wear this. So I do.',parts:wizardParts}
 };
@@ -429,16 +440,19 @@ function dl(a,b){ // Damerau-Levenshtein (optimal string alignment)
   }
   return d[m][n];
 }
-// 'ok' richtig, 'typo' ein Tippfehler in einem langen Wort, 'no' falsch
+// 'ok' richtig, 'typo' ein Tippfehler in einem langen Wort oder ein fehlender Apostroph (dont), 'no' falsch.
+// Ein fehlendes oder überzähliges -s oder -es am Wortende ist nie ein Tippfehler (forget statt forgets, watchs statt watches): Das ist Grammatik.
+function sEnd(x,y){return x+'s'===y||y+'s'===x||x.replace(/s$/,'es')===y||y.replace(/s$/,'es')===x;}
 function judge(input,accepted){
   const n=norm(input); if(!n)return 'no';
   const acc=accepted.map(norm);
   if(acc.indexOf(n)>=0)return 'ok';
+  const ap=s=>s.replace(/'/g,''); if(acc.some(a=>ap(a)===ap(n)))return 'typo';
   const w=n.split(' ');
   for(const a of acc){
     const aw=a.split(' '); if(aw.length!==w.length)continue;
     const diff=[]; for(let i=0;i<w.length;i++)if(w[i]!==aw[i])diff.push(i);
-    if(diff.length===1){const i=diff[0]; if(Math.min(w[i].length,aw[i].length)>=6&&dl(w[i],aw[i])===1)return 'typo';}
+    if(diff.length===1){const i=diff[0]; if(Math.min(w[i].length,aw[i].length)>=6&&dl(w[i],aw[i])===1&&!sEnd(w[i],aw[i]))return 'typo';}
   }
   return 'no';
 }
@@ -502,6 +516,20 @@ function placeLevel(pl){ // pl = [richtig ●, richtig ■, richtig ▲], je von
   return {st:'p',to:pl[2]===4};
 }
 function statusFor(pct){return pct>=80?3:pct>=50?2:1;}
+// „Continue“ (Pauls Entscheidung vom 6. Oktober 2026): Der Pflichtteil eines Bausteins endet mit dem Intermediate-Checkpoint, Advanced ist freiwillig.
+function coreDone(U){return !!(U&&U.st)&&(U.st==='p'||!!U.lv.k.c[1]);}   // Basic und Intermediate geschafft oder per Einstufung gezeigt
+function advOpen(U){return coreDone(U)&&!U.lv.p.c[1];}                    // Advanced ist noch nicht geschafft
+function advStarted(U){   // per Einstufung bei Advanced eingestiegen oder dort schon etwas gemacht (Lektion, Set, Checkpoint)
+  if(!U||!U.st)return false; const l=U.lv.p;
+  return U.st==='p'||l.c[0]>0||(l.a||[]).some(x=>x>0)||(l.l||[]).some(x=>x>0);
+}
+// Baustein, in dem „Continue“ weitergeht. order = offene Bausteine in der Reihenfolge des Pfads, cur = zuletzt benutzter Baustein.
+// 1. Im zuletzt benutzten Baustein bleiben, solange sein Pflichtteil läuft oder sein Advanced begonnen und noch nicht geschafft ist.
+// 2. Sonst der erste Baustein im Pfad, dessen Pflichtteil offen ist.  3. Sind alle Pflichtteile geschafft: der erste mit offenem Advanced.
+function pickUnit(order,units,cur){
+  if(cur&&order.indexOf(cur)>=0){const U=units[cur]; if(!coreDone(U)||(advOpen(U)&&advStarted(U)))return cur;}
+  return order.find(id=>!coreDone(units[id]))||order.find(id=>advOpen(units[id]))||null;
+}
 function shuffle(a,rnd){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 // Reihenfolge: ungesehen, zuletzt falsch, einmal richtig, sicher
 function drawFrom(pool,n,it,rnd){
@@ -700,9 +728,7 @@ function warmPool(){
   return shuffle(wrong,Math.random).concat(shuffle(once,Math.random)).slice(0,8);
 }
 function curUnit(){ // Baustein, in dem es weitergeht
-  const on=onIds();
-  if(S.cur&&on.indexOf(S.cur)>=0&&nextStep(S.units[S.cur]).k!=='done')return S.cur;
-  return on.find(id=>nextStep(S.units[id]).k!=='done')||null;
+  return pickUnit(onIds(),S.units,S.cur);
 }
 function globalNext(){
   if(S.today.items===0&&!S.today.warm&&warmPool().length>=4)return {k:'warm'};
@@ -1065,6 +1091,8 @@ function endHTML(){
     const pass=pct>=80, lv=U.lv[run.L], ws=lv.r||1, ag=run.preview?0:lesList(run.uid,run.L,ws).filter(m=>(lv.l||[])[m-1]===2).length;
     h+='<p class="resline">'+(pass?'You passed '+LV[run.L].n+'.':'You need 80%.'+(run.preview?'':' Best next step: \u201C'+esc(setName(run.uid,run.L,ws))+'\u201D'+(ag?', with Doggo\u2019s lesson'+(ag>1?'s':'')+' first':'')+'.'+(lv.c[0]>=2?' Read the rule card first and ask your teacher about the corrections below.':'')))+'</p>'+
       '<div class="coach"><div>'+dogga(pass?'':'stern')+'</div><p>'+esc(run.endLine)+'</p></div>'+wonHTML();
+    if(pass&&run.L==='k'&&!run.preview&&advOpen(U)){const nx=curUnit();
+      if(nx&&nx!==run.uid)h+='<p class="txt" id="advhint">'+LV.p.sym+' Advanced is open now if you want more. It is optional: \u201CContinue\u201D on the start page takes you to '+esc(UMETA[nx].name)+'.</p>';}
   }
   h+=corrHTML();
   h+='<div class="acts"><button class="btn" data-act="topath">'+back+'</button></div>';
